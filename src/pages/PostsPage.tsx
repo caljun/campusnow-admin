@@ -199,12 +199,41 @@ export default function PostsPage() {
     setScanning(true);
     setScanResults({});
     try {
+      // 掲示板（board）は「題名」「スレッド本文」「返信」を分けて判定したいので、
+      // スキャン時に返信もまとめて取得して backend に渡す。
+      const repliesByPostId: Record<string, Reply[]> = {};
+      const boardPosts = posts.filter((p) => p.type === "board");
+      if (boardPosts.length > 0) {
+        await Promise.all(
+          boardPosts.map(async (p) => {
+            const repliesSnap = await getDocs(collection(db, "posts", p.id, "replies"));
+            const replies = repliesSnap.docs
+              .map((d) => ({ id: d.id, ...d.data() } as Reply))
+              .sort((a, b) => a.createdAt - b.createdAt);
+            repliesByPostId[p.id] = replies;
+          })
+        );
+      }
+
       const res = await fetch("/api/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           posts: posts.map(({ id, type, displayName, text, title, anonymous }) => ({
-            id, type, displayName, text, title, anonymous,
+            id,
+            type,
+            displayName,
+            text,
+            title,
+            anonymous,
+            replies:
+              type === "board"
+                ? (repliesByPostId[id] ?? []).map((r) => ({
+                    id: r.id,
+                    displayName: r.displayName,
+                    text: r.text,
+                  }))
+                : undefined,
           })),
         }),
       });
@@ -353,6 +382,14 @@ export default function PostsPage() {
                         )}
                         {/* スマホでは投稿時刻カラムを隠すので、ここに表示 */}
                         <p className="sm:hidden text-xs text-gray-500 mt-0.5">{timeAgo(post.createdAt)}</p>
+                        {isFlagged && result?.reason && (
+                          <p
+                            className="sm:hidden text-xs text-red-400 mt-1 break-words"
+                            title={result.reason}
+                          >
+                            AI要確認: {result.reason}
+                          </p>
+                        )}
                       </td>
                       <td className="hidden sm:table-cell px-3 sm:px-5 py-3.5">
                         {!result ? (
@@ -361,7 +398,10 @@ export default function PostsPage() {
                           <div>
                             <span className="text-xs text-red-400 font-medium">⚠ 要確認</span>
                             {result.reason && (
-                              <p className="text-xs text-red-500/70 mt-0.5 max-w-[160px] truncate" title={result.reason}>
+                              <p
+                                className="text-xs text-red-500/70 mt-0.5 max-w-[240px] whitespace-normal break-words"
+                                title={result.reason}
+                              >
                                 {result.reason}
                               </p>
                             )}
