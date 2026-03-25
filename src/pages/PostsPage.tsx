@@ -68,7 +68,7 @@ export default function PostsPage() {
 
     try {
       const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
       const postList = posts
         .map((p) => `ID: ${p.id}\n投稿者: ${p.displayName}\n内容: ${p.text}`)
