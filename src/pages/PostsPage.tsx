@@ -245,7 +245,7 @@ export default function PostsPage() {
         <BoardDetailModal post={boardDetail} onClose={() => setBoardDetail(null)} />
       )}
 
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <div className="flex items-end justify-between mb-6">
           <div>
             <h1 className="text-xl font-bold text-white mb-1">投稿管理</h1>
@@ -292,7 +292,7 @@ export default function PostsPage() {
           ))}
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-x-auto">
           {loading ? (
             <div className="py-16 flex justify-center">
               <svg className="animate-spin w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none">
@@ -306,12 +306,12 @@ export default function PostsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-800">
-                  <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">種別</th>
-                  <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">投稿者</th>
-                  <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">内容</th>
-                  <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">AI判定</th>
-                  <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">投稿時刻</th>
-                  <th className="px-5 py-3" />
+                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">種別</th>
+                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">投稿者</th>
+                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">内容</th>
+                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">AI判定</th>
+                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">投稿時刻</th>
+                  <th className="px-3 sm:px-5 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
@@ -326,12 +326,12 @@ export default function PostsPage() {
                       onClick={() => isBoard && setBoardDetail(post)}
                       className={`transition ${isFlagged ? "bg-red-950/20" : ""} ${isBoard ? "hover:bg-gray-800/50 cursor-pointer" : "hover:bg-gray-800/30"}`}
                     >
-                      <td className="px-5 py-3.5">
+                      <td className="px-3 sm:px-5 py-3.5">
                         <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${TYPE_COLOR[post.type]}`}>
                           {TYPE_LABEL[post.type]}
                         </span>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-3 sm:px-5 py-3.5">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-indigo-900 flex items-center justify-center text-indigo-400 font-bold text-xs flex-shrink-0">
                             {post.anonymous ? "匿" : (post.displayName?.charAt(0) ?? "?")}
@@ -341,7 +341,7 @@ export default function PostsPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-5 py-3.5 text-gray-300 max-w-xs">
+                      <td className="px-3 sm:px-5 py-3.5 text-gray-300 max-w-xs">
                         {post.title && (
                           <p className="text-white text-xs font-medium truncate mb-0.5">{post.title}</p>
                         )}
@@ -352,7 +352,7 @@ export default function PostsPage() {
                           </p>
                         )}
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td className="px-3 sm:px-5 py-3.5">
                         {!result ? (
                           <span className="text-gray-700 text-xs">—</span>
                         ) : isFlagged ? (
@@ -368,10 +368,10 @@ export default function PostsPage() {
                           <span className="text-xs text-emerald-500">✓ 問題なし</span>
                         )}
                       </td>
-                      <td className="px-5 py-3.5 text-gray-500 text-xs whitespace-nowrap">
+                      <td className="px-3 sm:px-5 py-3.5 text-gray-500 text-xs whitespace-normal sm:whitespace-nowrap">
                         {timeAgo(post.createdAt)}
                       </td>
-                      <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
+                      <td className="px-3 sm:px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() =>
                             setConfirm({

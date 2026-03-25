@@ -81,11 +81,11 @@ export default function UsersPage() {
         />
       )}
 
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <h1 className="text-xl font-bold text-white mb-1">ユーザー管理</h1>
         <p className="text-sm text-gray-500 mb-8">全 {loading ? "—" : users.length} 人</p>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-x-auto">
           {loading ? (
             <div className="py-16 flex justify-center">
               <svg className="animate-spin w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none">
@@ -99,16 +99,16 @@ export default function UsersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-800">
-                  <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">名前</th>
-                  <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">メール</th>
-                  <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">所属</th>
-                  <th className="px-5 py-3" />
+                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">名前</th>
+                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">メール</th>
+                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">所属</th>
+                  <th className="px-3 sm:px-5 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
                 {users.map((u) => (
                   <tr key={u.uid} className="hover:bg-gray-800/50 transition">
-                    <td className="px-5 py-3.5">
+                    <td className="px-3 sm:px-5 py-3.5">
                       <div className="flex items-center gap-2.5">
                         <div className="w-7 h-7 rounded-full bg-indigo-900 flex items-center justify-center text-indigo-400 font-bold text-xs flex-shrink-0">
                           {u.displayName?.charAt(0) ?? "?"}
@@ -116,9 +116,9 @@ export default function UsersPage() {
                         <span className="text-white font-medium">{u.displayName}</span>
                       </div>
                     </td>
-                    <td className="px-5 py-3.5 text-gray-400">{u.email}</td>
-                    <td className="px-5 py-3.5 text-gray-400">{u.department || "—"}</td>
-                    <td className="px-5 py-3.5 text-right">
+                    <td className="px-3 sm:px-5 py-3.5 text-gray-400">{u.email}</td>
+                    <td className="px-3 sm:px-5 py-3.5 text-gray-400">{u.department || "—"}</td>
+                    <td className="px-3 sm:px-5 py-3.5 text-right">
                       <button
                         onClick={() => setConfirm({ uid: u.uid, name: u.displayName })}
                         className="text-xs text-red-400 border border-red-900 px-3 py-1.5 rounded-lg hover:bg-red-900/30 transition"
