@@ -292,7 +292,7 @@ export default function PostsPage() {
           ))}
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-x-auto">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
           {loading ? (
             <div className="py-16 flex justify-center">
               <svg className="animate-spin w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none">
@@ -309,8 +309,8 @@ export default function PostsPage() {
                   <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">種別</th>
                   <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">投稿者</th>
                   <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">内容</th>
-                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">AI判定</th>
-                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">投稿時刻</th>
+                  <th className="hidden sm:table-cell text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">AI判定</th>
+                  <th className="hidden sm:table-cell text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">投稿時刻</th>
                   <th className="px-3 sm:px-5 py-3" />
                 </tr>
               </thead>
@@ -351,8 +351,10 @@ export default function PostsPage() {
                             返信 {post.replyCount ?? 0}件 — クリックで表示
                           </p>
                         )}
+                        {/* スマホでは投稿時刻カラムを隠すので、ここに表示 */}
+                        <p className="sm:hidden text-xs text-gray-500 mt-0.5">{timeAgo(post.createdAt)}</p>
                       </td>
-                      <td className="px-3 sm:px-5 py-3.5">
+                      <td className="hidden sm:table-cell px-3 sm:px-5 py-3.5">
                         {!result ? (
                           <span className="text-gray-700 text-xs">—</span>
                         ) : isFlagged ? (
@@ -368,7 +370,7 @@ export default function PostsPage() {
                           <span className="text-xs text-emerald-500">✓ 問題なし</span>
                         )}
                       </td>
-                      <td className="px-3 sm:px-5 py-3.5 text-gray-500 text-xs whitespace-normal sm:whitespace-nowrap">
+                      <td className="hidden sm:table-cell px-3 sm:px-5 py-3.5 text-gray-500 text-xs whitespace-normal sm:whitespace-nowrap">
                         {timeAgo(post.createdAt)}
                       </td>
                       <td className="px-3 sm:px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>

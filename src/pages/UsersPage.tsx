@@ -85,7 +85,7 @@ export default function UsersPage() {
         <h1 className="text-xl font-bold text-white mb-1">ユーザー管理</h1>
         <p className="text-sm text-gray-500 mb-8">全 {loading ? "—" : users.length} 人</p>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-x-auto">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
           {loading ? (
             <div className="py-16 flex justify-center">
               <svg className="animate-spin w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none">
@@ -101,7 +101,7 @@ export default function UsersPage() {
                 <tr className="border-b border-gray-800">
                   <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">名前</th>
                   <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">メール</th>
-                  <th className="text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">所属</th>
+                  <th className="hidden sm:table-cell text-left px-3 sm:px-5 py-3 text-xs text-gray-500 font-medium">所属</th>
                   <th className="px-3 sm:px-5 py-3" />
                 </tr>
               </thead>
@@ -115,9 +115,11 @@ export default function UsersPage() {
                         </div>
                         <span className="text-white font-medium">{u.displayName}</span>
                       </div>
+                      {/* スマホでは所属カラムを隠すので、名前欄の下に表示 */}
+                      {u.department && <p className="sm:hidden text-xs text-gray-500 mt-1">{u.department}</p>}
                     </td>
                     <td className="px-3 sm:px-5 py-3.5 text-gray-400">{u.email}</td>
-                    <td className="px-3 sm:px-5 py-3.5 text-gray-400">{u.department || "—"}</td>
+                    <td className="hidden sm:table-cell px-3 sm:px-5 py-3.5 text-gray-400">{u.department || "—"}</td>
                     <td className="px-3 sm:px-5 py-3.5 text-right">
                       <button
                         onClick={() => setConfirm({ uid: u.uid, name: u.displayName })}
