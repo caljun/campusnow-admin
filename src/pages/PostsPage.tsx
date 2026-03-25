@@ -275,19 +275,19 @@ export default function PostsPage() {
           </button>
         </div>
 
-        <div className="flex gap-1.5 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4">
           {(["all", "post", "board", "announcement"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTypeFilter(t)}
-              className={`text-xs px-3 py-1.5 rounded-lg border transition ${
+              className={`text-xs sm:text-xs px-3 py-2 rounded-lg border transition whitespace-nowrap ${
                 typeFilter === t
                   ? "border-gray-600 text-gray-200 bg-gray-800"
                   : "border-gray-800 text-gray-500 hover:bg-gray-800/50"
               }`}
             >
               {t === "all" ? "すべて" : TYPE_LABEL[t]}
-              <span className="ml-1.5 text-gray-600">{counts[t]}</span>
+              <span className="ml-1.5 text-gray-600 hidden sm:inline">{counts[t]}</span>
             </button>
           ))}
         </div>
