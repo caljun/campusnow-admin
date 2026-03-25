@@ -3,7 +3,7 @@ import { collection, onSnapshot, doc, deleteDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import Layout from "../components/Layout";
 import ConfirmModal from "../components/ConfirmModal";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 interface Post {
   id: string;
@@ -67,8 +67,7 @@ export default function PostsPage() {
     setScanResults({});
 
     try {
-      const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
 
       const postList = posts
         .map((p) => `ID: ${p.id}\n投稿者: ${p.displayName}\n内容: ${p.text}`)
@@ -89,8 +88,11 @@ ${postList}
 以下のJSON形式のみで返答してください（説明文や\`\`\`は不要）:
 [{"id":"投稿ID","flagged":true/false,"reason":"問題がある場合の理由（日本語）、問題なければ空文字"}]`;
 
-      const result = await model.generateContent(prompt);
-      const text = result.response.text().trim();
+      const result = await genAI.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+      });
+      const text = (result.text ?? "").trim();
 
       const parsed: Array<{ id: string; flagged: boolean; reason: string }> = JSON.parse(text);
       const map: Record<string, ScanResult> = {};
