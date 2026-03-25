@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, doc, deleteDoc, getDocs, query, where } from "firebase/firestore";
 import { db } from "../firebase";
 import Layout from "../components/Layout";
+import ConfirmModal from "../components/ConfirmModal";
 
 interface User {
   uid: string;
@@ -13,6 +14,8 @@ interface User {
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirm, setConfirm] = useState<{ uid: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "users"), (snap) => {
@@ -26,8 +29,58 @@ export default function UsersPage() {
     return unsub;
   }, []);
 
+  const handleDeleteUser = async () => {
+    if (!confirm) return;
+    setDeleting(true);
+    try {
+      const { uid } = confirm;
+
+      // 1. このユーザーの投稿を全件取得
+      const postsSnap = await getDocs(query(collection(db, "posts"), where("uid", "==", uid)));
+
+      // 2. 掲示板投稿のrepliesを削除
+      await Promise.all(
+        postsSnap.docs
+          .filter((p) => p.data().type === "board")
+          .map(async (p) => {
+            const repliesSnap = await getDocs(collection(db, "posts", p.id, "replies"));
+            await Promise.all(repliesSnap.docs.map((r) => deleteDoc(r.ref)));
+          })
+      );
+
+      // 3. 投稿を全件削除
+      await Promise.all(postsSnap.docs.map((p) => deleteDoc(p.ref)));
+
+      // 4. Firestoreのユーザードキュメント削除
+      await deleteDoc(doc(db, "users", uid));
+
+      // 5. Firebase Auth アカウント削除
+      await fetch("/api/delete-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uid }),
+      });
+
+      setConfirm(null);
+    } catch (e) {
+      console.error(e);
+      alert("削除に失敗しました。");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <Layout>
+      {confirm && (
+        <ConfirmModal
+          message={`${confirm.name} のアカウントを削除しますか？\nこのユーザーの投稿・掲示板・返信もすべて削除されます。`}
+          confirmLabel={deleting ? "削除中..." : "削除する"}
+          onConfirm={handleDeleteUser}
+          onCancel={() => { if (!deleting) setConfirm(null); }}
+        />
+      )}
+
       <div className="p-8">
         <h1 className="text-xl font-bold text-white mb-1">ユーザー管理</h1>
         <p className="text-sm text-gray-500 mb-8">全 {loading ? "—" : users.length} 人</p>
@@ -49,6 +102,7 @@ export default function UsersPage() {
                   <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">名前</th>
                   <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">メール</th>
                   <th className="text-left px-5 py-3 text-xs text-gray-500 font-medium">所属</th>
+                  <th className="px-5 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-800">
@@ -64,6 +118,14 @@ export default function UsersPage() {
                     </td>
                     <td className="px-5 py-3.5 text-gray-400">{u.email}</td>
                     <td className="px-5 py-3.5 text-gray-400">{u.department || "—"}</td>
+                    <td className="px-5 py-3.5 text-right">
+                      <button
+                        onClick={() => setConfirm({ uid: u.uid, name: u.displayName })}
+                        className="text-xs text-red-400 border border-red-900 px-3 py-1.5 rounded-lg hover:bg-red-900/30 transition"
+                      >
+                        削除
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

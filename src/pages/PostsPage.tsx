@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot, doc, deleteDoc } from "firebase/firestore";
+import { collection, onSnapshot, doc, deleteDoc, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import Layout from "../components/Layout";
 import ConfirmModal from "../components/ConfirmModal";
-import { GoogleGenAI } from "@google/genai";
 
 type PostType = "post" | "board" | "announcement";
 
@@ -48,7 +47,7 @@ function timeAgo(ms: number): string {
 export default function PostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [confirm, setConfirm] = useState<{ id: string; label: string } | null>(null);
+  const [confirm, setConfirm] = useState<{ id: string; type: PostType; label: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [scanResults, setScanResults] = useState<Record<string, ScanResult>>({});
   const [scanning, setScanning] = useState(false);
@@ -70,6 +69,11 @@ export default function PostsPage() {
     if (!confirm) return;
     setDeleting(true);
     try {
+      // 掲示板の場合はrepliesも削除
+      if (confirm.type === "board") {
+        const repliesSnap = await getDocs(collection(db, "posts", confirm.id, "replies"));
+        await Promise.all(repliesSnap.docs.map((r) => deleteDoc(r.ref)));
+      }
       await deleteDoc(doc(db, "posts", confirm.id));
       setConfirm(null);
     } finally {
@@ -83,39 +87,17 @@ export default function PostsPage() {
     setScanResults({});
 
     try {
-      const genAI = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
-
-      const postList = posts
-        .map((p) => {
-          const header = p.type === "post"
-            ? `ID: ${p.id}\n種別: 投稿\n投稿者: ${p.anonymous ? "匿名" : p.displayName}`
-            : `ID: ${p.id}\n種別: ${TYPE_LABEL[p.type]}\nタイトル: ${p.title ?? ""}\n投稿者: ${p.displayName}`;
-          return `${header}\n内容: ${p.text}`;
-        })
-        .join("\n\n---\n\n");
-
-      const prompt = `以下はキャンパス施設内のSNSへの投稿一覧です。各投稿について、以下の基準で問題があるかどうかを判定してください。
-
-【問題とみなす基準】
-- 誹謗中傷・暴言・侮辱的な表現
-- 性的な内容
-- 特定個人への攻撃・ハラスメント
-- スパム・宣伝・無意味な繰り返し
-- 差別的な発言
-
-【投稿一覧】
-${postList}
-
-以下のJSON形式のみで返答してください（説明文や\`\`\`は不要）:
-[{"id":"投稿ID","flagged":true/false,"reason":"問題がある場合の理由（日本語）、問題なければ空文字"}]`;
-
-      const result = await genAI.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
+      const res = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          posts: posts.map(({ id, type, displayName, text, title, anonymous }) => ({
+            id, type, displayName, text, title, anonymous,
+          })),
+        }),
       });
-      const text = (result.text ?? "").trim();
-
-      const parsed: Array<{ id: string; flagged: boolean; reason: string }> = JSON.parse(text);
+      if (!res.ok) throw new Error("scan failed");
+      const parsed: Array<{ id: string; flagged: boolean; reason: string }> = await res.json();
       const map: Record<string, ScanResult> = {};
       parsed.forEach((r) => { map[r.id] = { flagged: r.flagged, reason: r.reason }; });
       setScanResults(map);
@@ -141,9 +123,9 @@ ${postList}
     <Layout>
       {confirm && (
         <ConfirmModal
-          message={`「${confirm.label}」を削除しますか？`}
+          message={`「${confirm.label}」を削除しますか？${confirm.type === "board" ? "\n返信もすべて削除されます。" : ""}`}
           onConfirm={handleDelete}
-          onCancel={() => !deleting && setConfirm(null)}
+          onCancel={() => { if (!deleting) setConfirm(null); }}
           confirmLabel={deleting ? "削除中..." : "削除する"}
         />
       )}
@@ -178,7 +160,6 @@ ${postList}
           </button>
         </div>
 
-        {/* Type filter tabs */}
         <div className="flex gap-1.5 mb-4">
           {(["all", "post", "board", "announcement"] as const).map((t) => (
             <button
@@ -276,6 +257,7 @@ ${postList}
                           onClick={() =>
                             setConfirm({
                               id: post.id,
+                              type: post.type,
                               label: post.title ?? post.text.slice(0, 20),
                             })
                           }
