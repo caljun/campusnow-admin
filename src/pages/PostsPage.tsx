@@ -304,7 +304,7 @@ export default function PostsPage() {
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
           {(["all", "post", "board", "announcement"] as const).map((t) => (
             <button
               key={t}
