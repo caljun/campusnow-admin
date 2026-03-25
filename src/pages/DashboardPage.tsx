@@ -27,11 +27,11 @@ export default function DashboardPage() {
 
   return (
     <Layout>
-      <div className="p-4 sm:p-8">
+      <div className="p-4 lg:p-8">
         <h1 className="text-xl font-bold text-white mb-1">ダッシュボード</h1>
         <p className="text-sm text-gray-500 mb-8">QUINTBRIDGE — リアルタイム概要</p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {stats.map((s) => (
             <div key={s.label} className="bg-gray-900 border border-gray-800 rounded-2xl p-6">
               <p className="text-xs text-gray-500 mb-3">{s.label}</p>
