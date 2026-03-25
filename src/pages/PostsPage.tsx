@@ -321,7 +321,7 @@ export default function PostsPage() {
           ))}
         </div>
 
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-hidden">
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl overflow-x-auto">
           {loading ? (
             <div className="py-16 flex justify-center">
               <svg className="animate-spin w-5 h-5 text-gray-600" viewBox="0 0 24 24" fill="none">
