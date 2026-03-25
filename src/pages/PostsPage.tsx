@@ -18,6 +18,14 @@ interface Post {
   createdAt: number;
 }
 
+interface Reply {
+  id: string;
+  uid: string;
+  displayName: string;
+  text: string;
+  createdAt: number;
+}
+
 interface ScanResult {
   flagged: boolean;
   reason: string;
@@ -44,6 +52,111 @@ function timeAgo(ms: number): string {
   return `${Math.floor(min / 60)}時間前`;
 }
 
+// ── Board detail modal ──────────────────────────────────────────
+function BoardDetailModal({ post, onClose }: { post: Post; onClose: () => void }) {
+  const [replies, setReplies] = useState<Reply[]>([]);
+  const [loadingReplies, setLoadingReplies] = useState(true);
+  const [confirmReply, setConfirmReply] = useState<Reply | null>(null);
+  const [deletingReply, setDeletingReply] = useState(false);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "posts", post.id, "replies"), (snap) => {
+      setReplies(
+        snap.docs
+          .map((d) => ({ id: d.id, ...d.data() } as Reply))
+          .sort((a, b) => a.createdAt - b.createdAt)
+      );
+      setLoadingReplies(false);
+    });
+    return unsub;
+  }, [post.id]);
+
+  const handleDeleteReply = async () => {
+    if (!confirmReply) return;
+    setDeletingReply(true);
+    try {
+      await deleteDoc(doc(db, "posts", post.id, "replies", confirmReply.id));
+      setConfirmReply(null);
+    } finally {
+      setDeletingReply(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {confirmReply && (
+        <ConfirmModal
+          message={`「${confirmReply.text.slice(0, 30)}」を削除しますか？`}
+          confirmLabel={deletingReply ? "削除中..." : "削除する"}
+          onConfirm={handleDeleteReply}
+          onCancel={() => { if (!deletingReply) setConfirmReply(null); }}
+        />
+      )}
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative bg-gray-900 border border-gray-700 rounded-2xl w-full max-w-lg mx-4 max-h-[80vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+          <div className="flex items-center gap-2">
+            <span className="text-xs px-2 py-0.5 rounded-md font-medium bg-emerald-900/50 text-emerald-300">掲示板</span>
+            <span className="text-xs text-gray-500">{timeAgo(post.createdAt)}</span>
+          </div>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-300 transition">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Original post */}
+        <div className="px-5 py-4 border-b border-gray-800">
+          <p className="text-white font-semibold text-sm mb-1">{post.title}</p>
+          <p className="text-gray-300 text-sm leading-relaxed">{post.text}</p>
+          <p className="text-xs text-gray-600 mt-2">{post.displayName}</p>
+        </div>
+
+        {/* Replies */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-2">
+            返信 {loadingReplies ? "—" : replies.length}件
+          </p>
+          {loadingReplies ? (
+            <div className="flex justify-center py-8">
+              <svg className="animate-spin w-4 h-4 text-gray-600" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+              </svg>
+            </div>
+          ) : replies.length === 0 ? (
+            <p className="text-sm text-gray-600 text-center py-8">返信がありません</p>
+          ) : (
+            replies.map((reply) => (
+              <div key={reply.id} className="bg-gray-800 rounded-xl px-4 py-3 flex gap-3 items-start group">
+                <div className="w-7 h-7 rounded-full bg-indigo-900 flex items-center justify-center text-indigo-400 font-bold text-xs flex-shrink-0">
+                  {reply.displayName?.charAt(0) ?? "?"}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-gray-300">{reply.displayName}</span>
+                    <span className="text-xs text-gray-600">{timeAgo(reply.createdAt)}</span>
+                  </div>
+                  <p className="text-sm text-gray-300 leading-relaxed">{reply.text}</p>
+                </div>
+                <button
+                  onClick={() => setConfirmReply(reply)}
+                  className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-xs text-red-500 border border-red-900 px-2 py-1 rounded-lg hover:bg-red-900/30 transition"
+                >
+                  削除
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ───────────────────────────────────────────────────
 export default function PostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +165,7 @@ export default function PostsPage() {
   const [scanResults, setScanResults] = useState<Record<string, ScanResult>>({});
   const [scanning, setScanning] = useState(false);
   const [typeFilter, setTypeFilter] = useState<PostType | "all">("all");
+  const [boardDetail, setBoardDetail] = useState<Post | null>(null);
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "posts"), (snap) => {
@@ -69,7 +183,6 @@ export default function PostsPage() {
     if (!confirm) return;
     setDeleting(true);
     try {
-      // 掲示板の場合はrepliesも削除
       if (confirm.type === "board") {
         const repliesSnap = await getDocs(collection(db, "posts", confirm.id, "replies"));
         await Promise.all(repliesSnap.docs.map((r) => deleteDoc(r.ref)));
@@ -85,7 +198,6 @@ export default function PostsPage() {
     if (posts.length === 0) return;
     setScanning(true);
     setScanResults({});
-
     try {
       const res = await fetch("/api/scan", {
         method: "POST",
@@ -128,6 +240,9 @@ export default function PostsPage() {
           onCancel={() => { if (!deleting) setConfirm(null); }}
           confirmLabel={deleting ? "削除中..." : "削除する"}
         />
+      )}
+      {boardDetail && (
+        <BoardDetailModal post={boardDetail} onClose={() => setBoardDetail(null)} />
       )}
 
       <div className="p-8">
@@ -203,11 +318,13 @@ export default function PostsPage() {
                 {displayed.map((post) => {
                   const result = scanResults[post.id];
                   const isFlagged = result?.flagged === true;
+                  const isBoard = post.type === "board";
 
                   return (
                     <tr
                       key={post.id}
-                      className={`hover:bg-gray-800/50 transition ${isFlagged ? "bg-red-950/20" : ""}`}
+                      onClick={() => isBoard && setBoardDetail(post)}
+                      className={`transition ${isFlagged ? "bg-red-950/20" : ""} ${isBoard ? "hover:bg-gray-800/50 cursor-pointer" : "hover:bg-gray-800/30"}`}
                     >
                       <td className="px-5 py-3.5">
                         <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${TYPE_COLOR[post.type]}`}>
@@ -229,8 +346,10 @@ export default function PostsPage() {
                           <p className="text-white text-xs font-medium truncate mb-0.5">{post.title}</p>
                         )}
                         <p className="truncate text-gray-400">{post.text}</p>
-                        {post.type === "board" && post.replyCount != null && (
-                          <p className="text-xs text-gray-600 mt-0.5">返信 {post.replyCount}件</p>
+                        {isBoard && (
+                          <p className="text-xs text-emerald-600 mt-0.5">
+                            返信 {post.replyCount ?? 0}件 — クリックで表示
+                          </p>
                         )}
                       </td>
                       <td className="px-5 py-3.5">
@@ -252,7 +371,7 @@ export default function PostsPage() {
                       <td className="px-5 py-3.5 text-gray-500 text-xs whitespace-nowrap">
                         {timeAgo(post.createdAt)}
                       </td>
-                      <td className="px-5 py-3.5 text-right">
+                      <td className="px-5 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
                         <button
                           onClick={() =>
                             setConfirm({
